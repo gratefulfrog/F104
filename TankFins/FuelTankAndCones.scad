@@ -167,16 +167,16 @@ module doit(starboard) {
         /****  GENERATORS ***/
         //NoseCone();
         //CuttingGuide();  
-        //HorizontalFuelTank(starboard);   // horizontal complete tank
+        HorizontalFuelTank(starboard);   // horizontal complete tank
         //FuelTank(true);     // vertical complete tank
         //FrontCone();
-        
+        /* rear cone alone
         translate([centerLength/2.,0,0]){
             rotate([0,90,0])
             rearConeWithFins(starboard,true);
         }
-        
-        /*
+        */
+        /* Center part alone
         rotate([0,90,0])
             Center(true);
         */
@@ -184,4 +184,4 @@ module doit(starboard) {
         slotBlock(starboard);
     }
 }
-doit(false);
+doit(true);
