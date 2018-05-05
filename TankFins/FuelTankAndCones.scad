@@ -37,7 +37,8 @@ rearBez = 85;          // bezier height of rear cone (for bezier function)
 overlapLength = 10;   // length of overlappin section of each cone
 overlapRadius = 33.0/2.0;  // radius of overlapping section, do not modify
 shift = 50;              // distance to move parts when laying them out
-
+slotLength = 75;         // length of wing slot in center part
+slotWidth  = 6;          // width of wing solt
 module frontCyl(){
     // bezier generator for the front cone
     BezCone(d=diaExt-1,h=frontLength,curve=frontCurve,curve2=frontLength);
@@ -48,9 +49,9 @@ module rearCyl(){
     BezCone(d=diaExt-1,h=rearLength,curve=rearCurve,curve2=rearBez);
 }
 
-module Center(){
+module Center(center=false){
     // make the center section
-    cylinder(h=centerLength,r1=radiusExt-0.5,r2=radiusExt-0.5,center=false);
+    cylinder(h=centerLength,r1=radiusExt-0.5,r2=radiusExt-0.5,center=center);
 }
 module Overlap(){
     // make the overlapping cylinder 
@@ -149,14 +150,38 @@ module rearConeWithFins(starboard,fins=false){
         }
     }
 }
-
-/****  GENERATORS ***/
-//NoseCone();
-
-//CuttingGuide();  
-HorizontalFuelTank(true);   // horizontal complete tank
-//FuelTank(true);     // vertical complete tank
-//FrontCone();
-//rearConeWithFins(true,true);
-//Center();
-//finAssembly(true);
+module slotBlockHelper(){
+    translate([centerLength/2.-slotLength,-slotWidth/2.,0])
+        cube([slotLength,slotWidth, radiusExt*2]);
+}
+module slotBlock(starboard){
+    if (starboard)
+        rotate([90,0,0])
+            slotBlockHelper();
+    else
+        rotate([-90,0,0])
+            slotBlockHelper();
+}
+module doit(starboard) {
+    difference(){
+        /****  GENERATORS ***/
+        //NoseCone();
+        //CuttingGuide();  
+        //HorizontalFuelTank(starboard);   // horizontal complete tank
+        //FuelTank(true);     // vertical complete tank
+        //FrontCone();
+        
+        translate([centerLength/2.,0,0]){
+            rotate([0,90,0])
+            rearConeWithFins(starboard,true);
+        }
+        
+        /*
+        rotate([0,90,0])
+            Center(true);
+        */
+        //finAssembly(starboard);
+        slotBlock(starboard);
+    }
+}
+doit(false);
