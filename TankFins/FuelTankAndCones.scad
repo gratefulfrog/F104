@@ -1,5 +1,6 @@
 /* FuelTankAndCones.scad
  * 2016 03 10
+ * updated 2018 05 06
  * gratefulfrog
  * use this file to generate STLs for the F104 fuel tank parts
  * ---------------------
@@ -7,12 +8,10 @@
  * at the very end of the file, uncomment the generator that suits you:
  * HorizontalFuelTank(starboard);  // horizontal complete tank, 
                                    // boolean indicates if starboard
- * FuelTank();     // vertical complete tank, boolean indicates if starboard
- * FrontCone();
- * RearCone();
- * rearConeWithFins(statboard,withFins);  // args are booleans, if not withFins, then slots
-                                          // are left for the fins to mount!
- * Center();
+ * doFrontCone();
+ * doRearCone(starboard);
+ * doCenter();
+ * then doit(starboard) does the work! This is where to set starboard!!!
  */
  
  include <TankFins.scad>
@@ -24,7 +23,6 @@
 
 $fn=100;   // smoothness of shell, do not change this setting
 
-shellThickness = 1.2;    // setting in Slic3r/Cura for the 3D printing
 diaExt = 36.0;           // measured external diameter of the paper cylinder
 radiusExt = diaExt/2.0;  // just computation, do not change
 centerLength = 180;     // length of center cylinder
@@ -36,9 +34,16 @@ rearCurve = 1;         // curvature of rear cone (for bezier function)
 rearBez = 85;          // bezier height of rear cone (for bezier function)
 overlapLength = 10;   // length of overlappin section of each cone
 overlapRadius = 33.0/2.0;  // radius of overlapping section, do not modify
-shift = 50;              // distance to move parts when laying them out
-slotLength = 75;         // length of wing slot in center part
-slotWidth  = 6;          // width of wing solt
+
+// mounting slot parameters
+slotOffset = 32;              // distance from the tail of center section
+slotLength = 54;  //75;       // length of wing slot in center part
+slotWidth  = 5.5; //6;        // width of wing solt
+wingTabLength = 32;        // length of tab in tank
+slotEpsilon = 2;              // to ensure full piercing
+slotDepth  = wingTabLength + slotEpsilon;  // depth of slot
+slotAngle  = 2.0;             // angle of incidence of tank 
+                              // positive => upwards at nose
 module frontCyl(){
     // bezier generator for the front cone
     BezCone(d=diaExt-1,h=frontLength,curve=frontCurve,curve2=frontLength);
@@ -70,21 +75,7 @@ module RearCone(){
     rearCyl();
     Overlap();
 }
-module BothCones(){
-    // make both cones and lay them out
-    translate([shift,0,0]){
-        FrontCone();
-    }
-    RearCone();
-}
-/*
-module AllParts(){
-    // make both cones and the center section and lay them out
-    translate([shift,0,overlapLength])
-        BothCones();
-    Center();
-}
-*/
+
 module FuelTank(starboard){
     // make an assembled fuel tank, just to see what it looks like
     rotate([0,180,0]){
@@ -111,31 +102,6 @@ module CuttingGuide(){
         }
     }
 }
- 
-module  NoseCone(){
-    rodDia = 3.0;
-    rodRad = rodDia/2.0;
-    rodLength=100;
-    rodInsert=25;
-    coneHeight = 15;
-    coneBaseDia = 15;
-    coneBaseRad = coneBaseDia/2.0;
-    foamThickness = 5.5;
-    cylinder(h=coneHeight,r2=rodRad,r1=coneBaseRad);
-    translate([0,0,coneHeight-rodInsert]){
-        cylinder(h=rodLength,r1=rodRad,r2=rodRad);
-    }
-    rectHeight=(rodInsert-coneHeight)*2;
-    rotate([0,0,90]){
-        translate([0,0,-rectHeight]/2.0){
-            cube(size=[coneBaseDia,foamThickness,rectHeight],center=true);
-        }   
-    }
-    translate([0,0,-rectHeight]/2.0){
-       cube(size=[coneBaseDia,foamThickness,rectHeight],center=true);
-    }
-}
-
 module rearConeWithFins(starboard,fins=false){
     rotate([0,-90,0]){
         difference(){
@@ -150,38 +116,46 @@ module rearConeWithFins(starboard,fins=false){
         }
     }
 }
-module slotBlockHelper(){
-    translate([centerLength/2.-slotLength,-slotWidth/2.,0])
-        cube([slotLength,slotWidth, radiusExt*2]);
+
+module slotBlockHelper(sign){
+  translate([centerLength/2.-slotOffset,-sign*slotWidth/2.,0])
+    rotate([0,slotAngle,0])
+      translate([-slotLength/2.0,0,0])
+        rotate([90,0,0])
+          cube([slotLength,slotWidth, slotDepth],center=true);
 }
 module slotBlock(starboard){
     if (starboard)
-        rotate([90,0,0])
-            slotBlockHelper();
+      slotBlockHelper(1);
     else
-        rotate([-90,0,0])
-            slotBlockHelper();
+      slotBlockHelper(-1);
+}
+module doFrontCone(){
+  translate([-centerLength/2.,0,0]){
+    rotate([0,-90,0])
+      FrontCone();
+  }
+}
+module doRearCone(starboard){
+  translate([centerLength/2.,0,0]){
+    rotate([0,90,0])
+      rearConeWithFins(starboard,true);
+  }
+}  
+module doCenter(){
+  rotate([0,90,0])
+    Center(true);
 }
 module doit(starboard) {
     difference(){
+      union(){
         /****  GENERATORS ***/
-        //NoseCone();
-        //CuttingGuide();  
         HorizontalFuelTank(starboard);   // horizontal complete tank
-        //FuelTank(true);     // vertical complete tank
-        //FrontCone();
-        /* rear cone alone
-        translate([centerLength/2.,0,0]){
-            rotate([0,90,0])
-            rearConeWithFins(starboard,true);
-        }
-        */
-        /* Center part alone
-        rotate([0,90,0])
-            Center(true);
-        */
-        //finAssembly(starboard);
-        slotBlock(starboard);
+        //doFrontCone();
+        //doRearCone(starboard);
+        //doCenter();
+      }
+      slotBlock(starboard);
     }
 }
 doit(true);
