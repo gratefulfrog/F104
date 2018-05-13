@@ -26,6 +26,7 @@ $fn=100;   // smoothness of shell, do not change this setting
 diaExt = 36.0;           // measured external diameter of the paper cylinder
 radiusExt = diaExt/2.0;  // just computation, do not change
 centerLength = 180;     // length of center cylinder
+centerSampleLength = 20;  // to make a little bit of the center for tests
 frontLength = 93;       // length of front cone -5 from original
 frontCurve = 2;         // curvature of front cone (for bezier function)
 frontBez = frontLength; // bezier height of front cone (for bezier function)
@@ -57,6 +58,10 @@ module rearCyl(){
 module Center(center=false){
     // make the center section
     cylinder(h=centerLength,r1=radiusExt-0.5,r2=radiusExt-0.5,center=center);
+}
+module CenterSample(center=false){
+    // make the center section
+    cylinder(h=centerSampleLength,r1=radiusExt-0.5,r2=radiusExt-0.5,center=center);
 }
 module Overlap(){
     // make the overlapping cylinder 
@@ -142,9 +147,10 @@ module doRearCone(starboard){
       rearConeWithFins(starboard,true);
   }
 }  
-module doCenter(){
+module doCenter(sample=false){
   rotate([0,90,0])
-    Center(true);
+    if (sample) CenterSample();
+    else Center(true);
 }
 module doit(starboard) {
     difference(){
@@ -158,4 +164,6 @@ module doit(starboard) {
       slotBlock(starboard);
     }
 }
+//doCenter(true); // makes a sample center piece
 doit(true);
+
