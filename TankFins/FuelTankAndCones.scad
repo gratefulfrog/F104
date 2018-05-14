@@ -165,5 +165,99 @@ module doit(starboard) {
     }
 }
 //doCenter(true); // makes a sample center piece
-doit(true);
+//doit(true);
+//////////////////////////////////////////////////////////////////////////////
+// start of new center version.
+// first the slot should be a hollow cube with a supporting arch on the short
+// end of the tbe, i.e. the straight part of the slot
+//
+// then the tube itself should be hollow.
+//
+// the wall width will be 2x the extruder dia, i.e. 2 perimeters, 
+// 2 x 0.4
 
+extruderDia         = 0.4;
+hollowWallThickness = 2*extruderDia;
+hollowRadiusInterior = radiusExt-hollowWallThickness;
+hollowDiaInterior = 2*hollowRadiusInterior;
+hollowLengthEpsilon = 5;
+
+hollowSlotArchDia = (diaExt+hollowDiaInterior)/2.;
+
+module hollowTube(){
+  difference(){
+    cylinder(h=centerLength, r=radiusExt);
+    translate([0,0,-hollowLengthEpsilon/2.])
+      cylinder(h=centerLength+hollowLengthEpsilon,r=hollowRadiusInterior);
+  }
+}
+
+
+//translate([-hollowSlotArchDia/2.,-slotWidth/2.,0])
+archColor = "red";
+module archSupport(){
+  zRotationCompensation = -0.1;
+  color(archColor,1)
+    translate([0,
+               -(slotWidth+2*hollowWallThickness)/2.,
+               -hollowSlotArchDia/2.+zRotationCompensation])
+      difference(){
+        cube([hollowSlotArchDia,
+              slotWidth+2*hollowWallThickness,
+              hollowWallThickness+hollowSlotArchDia/2.]);
+        translate([hollowSlotArchDia/2.,-1.5*slotWidth,0])
+          rotate([-90,0,0])
+          cylinder(d=hollowSlotArchDia,h= 3*slotWidth);
+      }
+    }
+
+
+module slotWithSupport(sign,solid=false){
+// slot = cube - cutter
+  smidgin = 0.4;
+translate([smidgin,0,0])
+//outter cube
+  rotate([sign*slotAngle,0,0])
+    difference(){
+      // external cube
+      translate([0,-(slotWidth+2*hollowWallThickness)/2.,0])
+        cube([hollowSlotArchDia+hollowLengthEpsilon,
+              slotWidth+2*hollowWallThickness,
+              slotLength+2*hollowWallThickness]);
+      // cutter cube
+      if (!solid){
+        translate([hollowWallThickness,
+                   -slotWidth/2.,
+                   hollowWallThickness])
+          cube([hollowSlotArchDia+2*hollowLengthEpsilon,
+                slotWidth,
+                slotLength]);
+      }
+    }
+}
+module extCuttingCylinder(){
+  translate([0,0,-hollowLengthEpsilon/2.])
+    difference(){
+     cylinder(h=centerLength+hollowLengthEpsilon, r=radiusExt+2*hollowLengthEpsilon); 
+     cylinder(h=centerLength+hollowLengthEpsilon, r=radiusExt);
+    }
+}
+module hollowCenter(starboard,arch){
+  difference(){
+    sign = starboard ? -1 : 1;
+    union(){
+      difference(){
+        hollowTube();
+        translate([-hollowSlotArchDia/2.,0,slotOffset-hollowWallThickness])
+          slotWithSupport(sign,true);
+      }
+      translate([-hollowSlotArchDia/2.,0,slotOffset-hollowWallThickness])
+          union(){
+            slotWithSupport(sign);
+            if (arch) archSupport();
+          }
+    }
+    extCuttingCylinder();
+  }
+}
+hollowCenter(true,true);
